@@ -1,0 +1,10 @@
+{
+    "name": "carvalho/radar-nfe",
+    "description": "Radar NF-e",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "require": {}
+}

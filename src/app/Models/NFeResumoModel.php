@@ -9,6 +9,7 @@ use App\Entities\Enums\TipoOperacao;
 
 class NFeResumoModel
 {
+    private int $nsu;
     private string $chaveAcesso;
     private string $razaoSocial;
     private string $cnpj;
@@ -20,4 +21,10 @@ class NFeResumoModel
     private string $protocolo;
     private SituacaoNFe $situacao;
     private TipoOperacao $tipoOperacao;
+
+
+    public static function fromXML(int $nsu, string $xml): static
+    {
+        return new NFeResumoModel();
+    }
 }

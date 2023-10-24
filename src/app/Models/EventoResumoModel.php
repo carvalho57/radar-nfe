@@ -6,6 +6,7 @@ namespace App\Entities;
 
 class EventoResumoModel
 {
+    private int $nsu;
     private string $cnpj;
     private string $cpf;
     private string $chaveAcesso;
@@ -15,4 +16,9 @@ class EventoResumoModel
     private int $sequencial;
     private string $descricaoEvento;
     private string $protocolo;
+
+    public static function fromXML(int $nsu, string $xml): static
+    {
+        return new EventoResumoModel();
+    }
 }

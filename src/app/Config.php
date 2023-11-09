@@ -20,8 +20,10 @@ class Config
         ];
 
         $this->empresa = [
-            'cnpj' => $config['CNPJ'],
+            'razaoSocial' => $config['RAZAO_SOCIAL'],
+            'cnpj' => preg_replace('/\D/', '', $config['CNPJ']),
             'uf' => $config['UF'],
+            'ambiente' => $config['AMBIENTE'] === 'PRODUCAO' ? '1' : '2',
         ];
 
         $this->certificado = [
@@ -30,7 +32,7 @@ class Config
         ];
     }
 
-    public function db(string $propriedade)
+    public function db(string $propriedade = '')
     {
         if (!empty($propriedade)) {
             return $this->db[$propriedade] ?? '';
@@ -38,16 +40,16 @@ class Config
 
         return $this->db;
     }
-    public function certificado(string $propriedade): string|array
+    public function certificado(string $propriedade = ''): string|array
     {
         if (!empty($propriedade)) {
-            return $this->db[$propriedade] ?? '';
+            return $this->certificado[$propriedade] ?? '';
         }
 
-        return $this->db;
+        return $this->certificado;
     }
 
-    public function empresa(string $propriedade)
+    public function empresa(string $propriedade = '')
     {
         if (!empty($propriedade)) {
             return $this->empresa[$propriedade] ?? '';

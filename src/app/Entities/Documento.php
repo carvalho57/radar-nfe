@@ -12,6 +12,7 @@ class Documento extends Entity
 
     public function __construct(int $nsu, Schema $schema, string $conteudo)
     {
+        parent::__construct();
         $this->nsu = $nsu;
         $this->schema = $schema;
         $this->conteudo = $conteudo;

@@ -13,6 +13,7 @@ abstract class Entity
 
     public function __construct()
     {
+        $this->id = 0;
         static::$db = App::db();
     }
 

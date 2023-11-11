@@ -12,6 +12,7 @@ services:
       - "80:80"
     volumes:
       - ../src:/var/www/html/
+      - ./php.ini-development:/usr/local/etc/php/conf.d/php.ini
   db:
     container_name: radar-db
     image: mysql:8.0

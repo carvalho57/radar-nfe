@@ -25,8 +25,6 @@ class ResumoNFe extends Entity implements Schema
 
     public static function fromXML(int $nsu, string $xml): static
     {
-        echo $xml;
-
         $dom = new \DOMDocument();
         $dom->loadXML($xml);
 

@@ -4,7 +4,7 @@ namespace App\Entities;
 
 use PDOException;
 
-class ResumoEvento extends Entity implements Schema
+class ResumoEvento extends Entity implements DocumentProcessable
 {
     private int $nsu;
     private string $cnpj;
@@ -18,27 +18,34 @@ class ResumoEvento extends Entity implements Schema
     private \DateTime $dataRecebimento;
     private Documento $documento;
 
-    public static function fromXML(int $nsu, string $xml): static
+    public function __construct(Documento $documento)
+    {
+        parent::__construct();
+        $this->documento = $documento;
+        $this->nsu = $documento->nsu;
+        $this->loadXML($this->documento->extrairConteudo());
+    }
+
+    public function loadXML(string $xml): static
     {
         $dom = new \DOMDocument();
         $dom->loadXML($xml);
 
         $node = $dom->getElementsByTagName('resEvento')->item(0);
 
-        $resumo = new static();
-        $resumo->nsu = $nsu;
-        $resumo->cnpj = $node->getElementsByTagName('CNPJ')?->item(0)->nodeValue ?? '';
-        $resumo->cpf = $node->getElementsByTagName('CPF')?->item(0)->nodeValue ?? '';
-        $resumo->chaveAcesso = $node->getElementsByTagName('chNFe')->item(0)->nodeValue;
-        $resumo->sequencia = $node->getElementsByTagName('nSeqEvento')->item(0)->nodeValue;
-        $resumo->tipoEvento = $node->getElementsByTagName('tpEvento')->item(0)->nodeValue;
-        $resumo->descricaoEvento = $node->getElementsByTagName('xEvento')->item(0)->nodeValue;
-        $resumo->protocolo = $node->getElementsByTagName('nProt')->item(0)->nodeValue;
-        $resumo->dataEmissao = new \DateTime($node->getElementsByTagName('dhEvento')->item(0)->nodeValue);
-        $resumo->dataRecebimento = new \DateTime($node->getElementsByTagName('dhRecbto')->item(0)->nodeValue);
+        $this->cnpj = $node->getElementsByTagName('CNPJ')?->item(0)->nodeValue ?? '';
+        $this->cpf = $node->getElementsByTagName('CPF')?->item(0)->nodeValue ?? '';
+        $this->chaveAcesso = $node->getElementsByTagName('chNFe')->item(0)->nodeValue;
+        $this->sequencia = $node->getElementsByTagName('nSeqEvento')->item(0)->nodeValue;
+        $this->tipoEvento = $node->getElementsByTagName('tpEvento')->item(0)->nodeValue;
+        $this->descricaoEvento = $node->getElementsByTagName('xEvento')->item(0)->nodeValue;
+        $this->protocolo = $node->getElementsByTagName('nProt')->item(0)->nodeValue;
+        $this->dataEmissao = new \DateTime($node->getElementsByTagName('dhEvento')->item(0)->nodeValue);
+        $this->dataRecebimento = new \DateTime($node->getElementsByTagName('dhRecbto')->item(0)->nodeValue);
 
-        return $resumo;
+        return $this;
     }
+
     public function processar(): bool
     {
         $query = 'INSERT INTO EVENTO ( NSU, CHAVE_ACESSO, CNPJ, CPF, DATA_EVENTO, TIPO_EVENTO, SEQUENCIA, DESCRICAO_EVENTO, DATA_AUTORIZACAO, PROTOCOLO, ID_DOCUMENTO) 
@@ -74,10 +81,5 @@ class ResumoEvento extends Entity implements Schema
         $this->id = parent::pdo()->lastInsertId();
 
         return $processed;
-    }
-
-    public function setDocumento(Documento $documento)
-    {
-        $this->documento = $documento;
     }
 }

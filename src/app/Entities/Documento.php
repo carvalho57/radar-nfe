@@ -9,6 +9,7 @@ class Documento extends Entity
     public readonly int $nsu;
     public readonly Schema $schema;
     public readonly string $conteudo;
+    private bool $processado;
 
     public function __construct(int $nsu, Schema $schema, string $conteudo)
     {
@@ -16,11 +17,65 @@ class Documento extends Entity
         $this->nsu = $nsu;
         $this->schema = $schema;
         $this->conteudo = $conteudo;
+        $this->processado = false;
     }
 
     public function extrairConteudo(): string
     {
         return gzdecode(base64_decode($this->conteudo));
+    }
+
+    public function setProcessado(): static
+    {
+        $this->processado = true;
+        return $this;
+    }
+
+    public function update(): bool
+    {
+        $query = 'UPDATE DOCUMENTO 
+                    SET NSU = :nsu, 
+                        DOC_SCHEMA = :schema, 
+                        CONTEUDO = :conteudo, 
+                        PROCESSADO = :processado
+                    WHERE IDDOCUMENTO = :id';
+
+        try {
+            $statement = $this->pdo()->prepare($query);
+            $statement->execute([
+                ':id' => $this->id,
+                ':nsu' => $this->nsu,
+                ':schema' => $this->schema->value,
+                ':conteudo' => $this->conteudo,
+                ':processado' => (int)$this->processado,
+            ]);
+        } catch (\PDOException $e) {
+            throw $e;
+        }
+
+        return $statement->rowCount() > 0;
+    }
+
+    public function insert(): bool
+    {
+        $query = 'INSERT INTO DOCUMENTO (NSU, DOC_SCHEMA, CONTEUDO, PROCESSADO) 
+                            VALUES(:nsu, :schema, :conteudo, :processado)';
+
+        try {
+            $statement = $this->pdo()->prepare($query);
+            $statement->execute([
+                ':nsu' => $this->nsu,
+                ':schema' => $this->schema->value,
+                ':conteudo' => $this->conteudo,
+                ':processado' => (int)$this->processado,
+            ]);
+        } catch (\PDOException $e) {
+            throw new \PDOException($e->getMessage(), $e->getCode());
+        }
+
+        $this->id = $this->pdo()->lastInsertId();
+
+        return $this->id > 0;
     }
 
 
@@ -56,34 +111,15 @@ class Documento extends Entity
         return parent::pdo()->commit();
     }
 
-    public static function saveDocumento(Documento $documento): bool
-    {
-        $query = 'INSERT INTO DOCUMENTO (NSU, DOC_SCHEMA, CONTEUDO) 
-                            VALUES(:nsu, :schema, :conteudo)';
 
-        try {
-            $statement = static::pdo()->prepare($query);
-            $statement->execute([
-                ':nsu' => $documento->nsu,
-                ':schema' => $documento->schema->value,
-                ':conteudo' => $documento->conteudo,
-            ]);
-        } catch (\PDOException $e) {
-            throw new \PDOException($e->getMessage(), $e->getCode());
-        }
 
-        $documento->id = parent::pdo()->lastInsertId();
-
-        return $documento->id > 0;
-    }
-
-    public static function getByNSURange(int $inicioNSU, int $finalNSU): array
+    public static function getByNSURange(int $inicioNSU, int $finalNSU)
     {
         if ($inicioNSU > $finalNSU) {
             return [];
         }
 
-        $query = 'SELECT IDDOCMENTO, NSU, DOC_SCHEMA, CONTEUDO, PROCESSADO, DATA_CRIACAO
+        $query = 'SELECT IDDOCUMENTO, NSU, DOC_SCHEMA, CONTEUDO, PROCESSADO, DATA_CRIACAO
                         FROM DOCUMENTO
                     WHERE NSU >= :inicioNSU AND NSU <= :finalNSU';
 
@@ -92,7 +128,7 @@ class Documento extends Entity
 
         $documentos = [];
         foreach ($statement->fetchAll() as $data) {
-            $documentos = self::createFromArray($data);
+            $documentos[] = self::createFromArray($data);
         }
 
         return $documentos;
@@ -104,7 +140,7 @@ class Documento extends Entity
             return null;
         }
 
-        $query = 'SELECT IDDOCMENTO, NSU, DOC_SCHEMA, CONTEUDO, PROCESSADO, DATA_CRIACAO
+        $query = 'SELECT IDDOCUMENTO, NSU, DOC_SCHEMA, CONTEUDO, PROCESSADO
                         FROM DOCUMENTO
                     WHERE IDDOCUMENTO = :id';
 
@@ -118,8 +154,9 @@ class Documento extends Entity
 
     private static function createFromArray(array $data)
     {
-        $newDocumento = new Documento($data['NSU'], $data['DOC_SCHEMA'], $data['CONTEUDO']);
+        $newDocumento = new Documento($data['NSU'], Schema::from($data['DOC_SCHEMA']), $data['CONTEUDO']);
         $newDocumento->id = $data['IDDOCUMENTO'];
+        $newDocumento->processado = (bool) $data['PROCESSADO'];
 
         return $newDocumento;
     }

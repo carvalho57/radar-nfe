@@ -12,6 +12,16 @@ Permitir que o usuário consiga buscar as notas emitidas contra o CNPJ de maneir
   * Operação não realizada
   * Confirmação da operação
 
+## Como executar
+É necessário ter o docker e docker-compose instalados
+
+~~~sh
+cd docker/
+docker-compose up -d --build
+~~~
+
+Acesse o [localhost](http://localhost)
+
 
 ## Pontos a pensar
 - Inicialmente não vou buscar nenhum padrão vou separar as partes sem seguir nenhuma convenção, pois não conheço e usar por usar não é uma boa ideia

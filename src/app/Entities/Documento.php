@@ -99,12 +99,15 @@ class Documento extends Entity
 
                 $statement->execute([
                     ':nsu' => $documento->nsu,
-                    ':schema' => $documento->schema,
+                    ':schema' => $documento->schema->value,
                     ':conteudo' => $documento->conteudo,
                 ]);
+
+                $documento->id = parent::pdo()->lastInsertId();
             }
         } catch (\PDOException $e) {
             parent::pdo()->rollBack();
+            return false;
         }
 
 

@@ -8,12 +8,13 @@ use App\Entities\Documento;
 use App\Entities\Enums\EventoManifestacao;
 use App\Entities\Enums\RespostaSEFAZ;
 use App\Entities\Enums\Schema;
+use App\Entities\Historico;
 use App\Entities\ProcEvento;
 use App\Entities\ProcNFe;
+use App\Entities\Resposta;
 use App\Entities\ResumoEvento;
 use App\Entities\ResumoNFe;
 use App\Entities\RetornoDistDFe;
-use App\Models\Resposta;
 use App\Services\ISefazDistDFeService;
 use Exception;
 use NFePHP\NFe\Tools;
@@ -32,18 +33,21 @@ class RadarNFeHandler
     public function buscarDocumentos(int $nsu): Resposta
     {
         try {
-            $resposta = $this->sefazDistDFeService->consultaNSU($nsu);
+            $resposta = $this->sefazDistDFeService->consultaUltimoNSU($nsu);
         } catch (Exception $e) {
             return Resposta::falha("Erro ao comunicar com a SEFAZ, tente novamente mais tarde. Erro: {$e->getMessage()}");
         }
 
         $retornoDistDFe = RetornoDistDFe::fromXML($resposta);
 
-        if ($retornoDistDFe->status === RespostaSEFAZ::NENHUM_DOCUMENTO_LOCALIZADO) {
+
+        Historico::createFromDistDFe($nsu, $retornoDistDFe)->gravar();
+
+        if ($retornoDistDFe->status === RespostaSEFAZ::NENHUM_DOCUMENTO_LOCALIZADO->value) {
             return Resposta::falha('Nenhum documento localizado', $retornoDistDFe);
         }
 
-        if ($retornoDistDFe->status === RespostaSEFAZ::CONSUMO_INDEVIDO) {
+        if ($retornoDistDFe->status === RespostaSEFAZ::CONSUMO_INDEVIDO->value) {
             return Resposta::falha('Consumo indevido', $retornoDistDFe);
         }
 
@@ -55,36 +59,35 @@ class RadarNFeHandler
 
         # Multiplos inserts, já salva todos os documentos
         // $this->documentoRepository->salvarDocumentos($documentos);
-        Documento::saveDocumentos($documentos);
+        $salvo = Documento::saveDocumentos($documentos);
 
-        # Processa os documentos, salvando e vinculando eles
-        $processado = $this->processarDocumentos($nsu, $retornoDistDFe->ultimoNSU);
+        if (!$salvo) {
+            return Resposta::falha('Erro ao salvar os documentos');
+        }
+
+        $processado = $this->processarDocumentos($documentos);
 
         if (!$processado) {
-            return Resposta::sucesso('Documentos localizados', $retornoDistDFe);
+            return Resposta::falha('Houve erro no processamento dos documentos, tente novamente', $retornoDistDFe);
         }
 
         return Resposta::sucesso('Documentos localizados', $retornoDistDFe);
     }
 
-    //Fazer as validações nos documentos
-    //Salvar no banco caso não exista
-    //Fazer os vinculos resumo_nfe e proc_nfe
-
-    public function processarDocumentos(int $inicioNSU, int $finalNSU): bool
+    /**
+     * Processa os documentos informados
+     * @param Documento[] $documentos
+     * @throws \Exception
+     * @return bool
+     */
+    public function processarDocumentos(array $documentos): bool
     {
-        //Faz validações
-        if ($inicioNSU > $finalNSU) {
-            return false;
-        }
-
-        $documentos = Documento::getByNSURange($inicioNSU, $finalNSU);
-
         if (empty($documentos)) {
             return false;
         }
 
-        /** @var Documento $documento */
+        $processouTodosDocumentos = true;
+
         foreach ($documentos as $documento) {
             $entity = match ($documento->schema) {
                 Schema::RESUMO_NFE => ResumoNFe::class,
@@ -98,17 +101,16 @@ class RadarNFeHandler
                 throw new Exception('Não foi possível carregar o documento');
             }
 
-            $documentoExtraido = $entity::fromXML($documento->nsu, $documento->extrairConteudo());
+            $documentoSchema = new $entity($documento);
+            $processado = $documentoSchema->processar();
 
-            $processed = $documentoExtraido->processar($documento);
-
-            if (!$processed) {
-                return false;
+            if ($processouTodosDocumentos && !$processado) {
+                $processouTodosDocumentos = false;
             }
         }
 
 
-        return true;
+        return $processouTodosDocumentos;
     }
 
 

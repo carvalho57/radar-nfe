@@ -14,6 +14,7 @@ class RetornoDistDFe
     public readonly string $dataResposta;
     public readonly int $ultimoNSU;
     public readonly int $maxNSU;
+    public readonly string $resposta;
     private $lote;
 
     private array $documentosMapeados;
@@ -38,7 +39,7 @@ class RetornoDistDFe
         $retorno->ultimoNSU = (int)$node->getElementsByTagName('ultNSU')->item(0)->nodeValue;
         $retorno->maxNSU = (int)$node->getElementsByTagName('maxNSU')->item(0)->nodeValue;
         $retorno->lote = $node->getElementsByTagName('loteDistDFeInt')?->item(0);
-
+        $retorno->resposta = $xml;
         return $retorno;
     }
 

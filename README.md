@@ -1,5 +1,5 @@
 # radar-nfe
-Buscar notas fiscais emitidas contra o CNPJ da empresa
+Buscar notas fiscais emitidas contra o CNPJ da empresa, serviço distribuição DFe [Nota Técnica 2014.002](https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=C/xkRclIh74=)
 
 
 ## Funcionamento

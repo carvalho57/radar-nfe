@@ -3,6 +3,7 @@
 namespace App\Entities;
 
 use App\Entities\Enums\Schema;
+use App\Helpers\EncodeHelper;
 
 class Documento extends Entity
 {
@@ -22,7 +23,7 @@ class Documento extends Entity
 
     public function extrairConteudo(): string
     {
-        return gzdecode(base64_decode($this->conteudo));
+        return EncodeHelper::decode($this->conteudo);
     }
 
     public function setProcessado(): static

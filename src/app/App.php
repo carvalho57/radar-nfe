@@ -3,8 +3,7 @@
 namespace App;
 
 use App\Database\DB;
-use App\Handlers\RadarNFeHandler;
-use App\Services\SefazDistDFeService;
+use App\Handlers\ConsultaRadarNFeHandler;
 
 class App
 {
@@ -24,17 +23,7 @@ class App
 
     public function run()
     {
-        $distDFeService = new SefazDistDFeService($this->config);
-        $radar = new RadarNFeHandler($distDFeService);
-
-        $resposta = $radar->buscarDocumentos(0);
-
-
-        echo '<pre>';
-        if ($resposta->isSucesso()) {
-            var_dump("Sucesso: {$resposta->mensagem}");
-        } else {
-            var_dump("Erro: {$resposta->mensagem}");
-        }
+        $consultaRadar = new ConsultaRadarNFeHandler($this->config);
+        $consultaRadar->handle();
     }
 }

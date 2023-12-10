@@ -9,6 +9,7 @@ use App\Entities\Enums\EventoManifestacao;
 use App\Entities\Enums\RespostaSEFAZ;
 use App\Entities\Enums\Schema;
 use App\Entities\Historico;
+use App\Entities\Manifestacao;
 use App\Entities\ProcEvento;
 use App\Entities\ProcNFe;
 use App\Entities\Resposta;
@@ -17,6 +18,7 @@ use App\Entities\ResumoNFe;
 use App\Entities\RetornoDistDFe;
 use App\Services\ISefazDistDFeService;
 use Exception;
+use NFePHP\NFe\Common\Standardize;
 use NFePHP\NFe\Tools;
 
 class RadarNFeHandler
@@ -24,9 +26,8 @@ class RadarNFeHandler
     private Tools $tools;
     private ISefazDistDFeService $sefazDistDFeService;
 
-    public function __construct(
-        ISefazDistDFeService $sefazDistDFeService,
-    ) {
+    public function __construct(ISefazDistDFeService $sefazDistDFeService)
+    {
         $this->sefazDistDFeService = $sefazDistDFeService;
     }
 
@@ -39,7 +40,6 @@ class RadarNFeHandler
         }
 
         $retornoDistDFe = RetornoDistDFe::fromXML($resposta);
-
 
         Historico::createFromDistDFe($nsu, $retornoDistDFe)->gravar();
 
@@ -57,8 +57,6 @@ class RadarNFeHandler
             return Resposta::falha('Não foi possível recuperar os documentos da resposta');
         }
 
-        # Multiplos inserts, já salva todos os documentos
-        // $this->documentoRepository->salvarDocumentos($documentos);
         $salvo = Documento::saveDocumentos($documentos);
 
         if (!$salvo) {
@@ -102,7 +100,14 @@ class RadarNFeHandler
             }
 
             $documentoSchema = new $entity($documento);
+            #TODO Armazenar o estado do processamento
+            #TODO Quais documentos não foram processados
             $processado = $documentoSchema->processar();
+
+            if ($processado) {
+                $documento->setProcessado();
+                $documento->update();
+            }
 
             if ($processouTodosDocumentos && !$processado) {
                 $processouTodosDocumentos = false;
@@ -114,7 +119,26 @@ class RadarNFeHandler
     }
 
 
-    public function manifestarNota(Documento $documento, EventoManifestacao $evento)
+    public function manifestarNota(ResumoNFe $nfe, EventoManifestacao $evento, string $justificativa = ''): Resposta
     {
+        if ($evento === EventoManifestacao::NAO_REALIZADA && empty($justificativa)) {
+            return Resposta::falha('É necessário informar a justificativa para o Evento de Operação não realizada');
+        }
+
+        $resposta = $this->sefazDistDFeService->manifestar($nfe->chaveAcesso, $evento->value, $justificativa);
+
+        $eventoManitesfacao = new Standardize($resposta);
+        $eventoManitesfacao = $eventoManitesfacao->toStd();
+
+        # Lote processado
+        if ($eventoManitesfacao->cStat !== 128) {
+            return Resposta::falha("Rejeição: {$eventoManitesfacao->cStat} - {$eventoManitesfacao->xMotivo}");
+        }
+
+        $manifestacao = Manifestacao::createFromXML($resposta);
+
+        $nfe->vincularManifestacao($manifestacao);
+
+        return Resposta::sucesso('Manifestação realizada com sucesso', $nfe->nsu);
     }
 }

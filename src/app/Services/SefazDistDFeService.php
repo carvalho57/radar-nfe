@@ -26,6 +26,9 @@ class SefazDistDFeService implements ISefazDistDFeService
         $caminhoCertificado = $config->certificado('path');
         $senhaCertificado = $config->certificado('password');
 
+        if (file_exists($caminhoCertificado)) {
+            echo $caminhoCertificado . PHP_EOL;
+        }
 
         if (!file_exists($caminhoCertificado) || !is_readable($caminhoCertificado)) {
             throw new \Exception('Não foi possível ler o certificado');

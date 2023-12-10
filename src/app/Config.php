@@ -24,6 +24,7 @@ class Config
             'cnpj' => preg_replace('/\D/', '', $config['CNPJ']),
             'uf' => $config['UF'],
             'ambiente' => $config['AMBIENTE'] === 'PRODUCAO' ? '1' : '2',
+            'limiteConsulta' => $config['QUANTIDADE_CONSULTA'] ?? 5,
         ];
 
         $this->certificado = [

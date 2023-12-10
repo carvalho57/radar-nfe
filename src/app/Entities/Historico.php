@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use App\Helpers\EncodeHelper;
+
 class Historico extends Entity
 {
     private string $resposta;
@@ -38,7 +40,7 @@ class Historico extends Entity
 
     public function getResposta()
     {
-        return gzdecode(base64_decode($this->resposta));
+        return EncodeHelper::decode($this->resposta);
     }
 
     public function gravar(): bool
@@ -77,7 +79,7 @@ class Historico extends Entity
                 ':MOTIVO' => $this->motivo,
                 ':DATA_RESPOSTA' => $this->dataResposta->format('Y-m-d H:i:s'),
                 ':AMBIENTE' => $this->ambiente,
-                ':RESPOSTA' => base64_encode(gzencode($this->resposta)),
+                ':RESPOSTA' => EncodeHelper::encode($this->resposta),
             ]);
         } catch (\PDOException $e) {
             throw $e;
@@ -86,5 +88,13 @@ class Historico extends Entity
         $this->id = $this->pdo()->lastInsertId();
 
         return $this->id > 0;
+    }
+
+    public static function getUltimoNSU(): int
+    {
+        $statement = static::pdo()->query('SELECT ULTIMO_NSU FROM HISTORICO ORDER BY IDHISTORICO DESC LIMIT 1');
+        $historico = $statement->fetch();
+
+        return $historico['ULTIMO_NSU'] ?? 0;
     }
 }

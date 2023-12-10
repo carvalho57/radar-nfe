@@ -8,19 +8,19 @@ use PDOException;
 
 class ResumoNFe extends Entity implements DocumentProcessable
 {
-    private int $nsu;
-    private string $chaveAcesso;
-    private string $razaoSocial;
-    private string $cnpj;
-    private string $cpf;
-    private string $inscricaoEstadual;
-    private \DateTime $dataEmissao;
-    private \DateTime $dataRecebimento;
-    private float $total;
-    private string $protocolo;
-    private SituacaoNFe $situacao;
-    private TipoOperacao $tipoOperacao;
-    private Documento $documento;
+    public readonly int $nsu;
+    public readonly string $chaveAcesso;
+    public readonly string $razaoSocial;
+    public readonly string $cnpj;
+    public readonly string $cpf;
+    public readonly string $inscricaoEstadual;
+    public readonly \DateTime $dataEmissao;
+    public readonly \DateTime $dataRecebimento;
+    public readonly float $total;
+    public readonly string $protocolo;
+    public readonly SituacaoNFe $situacao;
+    public readonly TipoOperacao $tipoOperacao;
+    public readonly Documento $documento;
 
 
     public function __construct(Documento $documento)
@@ -90,5 +90,35 @@ class ResumoNFe extends Entity implements DocumentProcessable
         $this->id = parent::pdo()->lastInsertId();
 
         return $processed;
+    }
+
+    public function vincularManifestacao(Manifestacao $manifestacao)
+    {
+        $insertManifestacao = 'INSERT INTO NFE (NSU, CHAVE_ACESSO, CNPJ, CPF, RAZAO_SOCIAL, IE, DATA_EMISSAO, DATA_AUTORIZACAO, TIPO_OPERACAO, VALOR_TOTAL, PROTOCOLO, SITUACAO_NFE, ID_DOCUMENTO)
+                        VALUES(:NSU, :CHAVE_ACESSO, :CNPJ, :CPF, :RAZAO_SOCIAL, :IE, :DATA_EMISSAO, :DATA_AUTORIZACAO, :TIPO_OPERACAO, :VALOR_TOTAL, :PROTOCOLO, :SITUACAO_NFE, :ID_DOCUMENTO)';
+
+        try {
+            $statement = parent::pdo()->prepare($insertManifestacao);
+
+            $statement->execute(
+                [
+                    ':NSU' => $this->nsu,
+                    ':CHAVE_ACESSO' => $this->chaveAcesso,
+                    ':CNPJ' => $this->cnpj,
+                    ':CPF' => $this->cpf,
+                    ':RAZAO_SOCIAL' => $this->razaoSocial,
+                    ':IE' => $this->inscricaoEstadual,
+                    ':DATA_EMISSAO' => $this->dataEmissao->format('Y-m-d H:i:s'),
+                    ':DATA_AUTORIZACAO' => $this->dataRecebimento->format('Y-m-d H:i:s'),
+                    ':TIPO_OPERACAO' => $this->tipoOperacao->value,
+                    ':VALOR_TOTAL' => $this->total,
+                    ':PROTOCOLO' => $this->protocolo,
+                    ':SITUACAO_NFE' => $this->situacao->value,
+                    ':ID_DOCUMENTO' => $this->documento?->id,
+                ]
+            );
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage(), $e->getCode());
+        }
     }
 }

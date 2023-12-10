@@ -28,3 +28,36 @@ Acesse o [localhost](http://localhost)
 - Vou utilizar um componente para consumir o distribuição DFe e depois implemento na mão então tenho que deixar essa parte flexivel para fazer essa troca
 - Não sei se será web ou cli, vou modelar e chamar na linha de comando quando estiver tudo 100% implemento uma interface
 - Vou manter nos modelos a comunicação com o banco e depois penso se é a melhor abordagem
+
+
+## Pontos da aplicação
+
+Como já tenho a estrutura básica já pronta faltando apenas a manifestação, vamos seguir com as próximas etapas para finalizar o 
+projeto
+
+### API
+Rotas da aplicação
+
+- /nfe/
+  - Parâmetros
+    - manifestada (se a nota já teve manifestação conclusiva)
+    - dataInicio ()
+    - dataFinal
+    - status 
+        - AUTORIZADO, DENEGADO, CANCELADA
+  - Retorno
+     - Ok(200)
+     - BadRequest(400)
+     - Unauthorized(401)
+- /nfe/{idNota}/manifestar
+  - Parâmetros
+    - nota (id-nota - IDNFE)
+    - operação - "DESCONHECIMENTODAOPERACAO" "OPERACAONAOREALIZADA" "CONFIRMACAODAOPERACAO"
+  - Retorno
+    - Ok(200)
+    - BadRequest(400)
+    - Unauthorized(401)
+
+
+### Cronjob
+Processo irá consultar os documentos de 3 em 3 horas, ele também já poderá manifestar as nota com CIÊNCIA DA OPERAÇÃO caso configurado

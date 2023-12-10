@@ -13,6 +13,7 @@ services:
     volumes:
       - ../src:/var/www/html/
       - ./php.ini-development:/usr/local/etc/php/conf.d/php.ini
+      - ./log/cron:/var/log/cron
   db:
     container_name: radar-db
     image: mysql:8.0
